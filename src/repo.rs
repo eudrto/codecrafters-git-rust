@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{blob::Blob, input_output, object::Object};
+use crate::{blob::Blob, input_output, object::Object, tree};
 
 pub struct Repo {
     root: PathBuf,
@@ -64,6 +64,13 @@ impl Repo {
                 entry.hash,
                 entry.name
             )
+        }
+    }
+
+    pub fn write_tree(&self) {
+        let hash = tree::write_tree(self.get_root());
+        if let Some(hash) = hash {
+            print!("{}", hash)
         }
     }
 }

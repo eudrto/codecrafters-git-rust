@@ -13,6 +13,7 @@ mod reference_impl;
 mod repo;
 #[cfg(test)]
 mod test_utils;
+mod tree;
 mod tree_node;
 
 #[derive(Parser)]
@@ -39,6 +40,7 @@ enum Commands {
         name_only: bool,
         tree_ish: String,
     },
+    WriteTree,
 }
 
 pub fn run() {
@@ -61,5 +63,6 @@ pub fn run() {
         } => {
             repo.ls_tree(name_only, &tree_ish);
         }
+        Commands::WriteTree => repo.write_tree(),
     }
 }

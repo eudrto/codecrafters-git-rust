@@ -1,6 +1,6 @@
 use std::{fmt::Display, slice::Iter};
 
-use crate::{bytes_reader::BytesReader, hash::Hash};
+use crate::{bytes_reader::BytesReader, codec, hash::Hash, object::Header};
 
 #[derive(Debug)]
 pub struct TreeNodeEntry {
@@ -27,6 +27,13 @@ impl TreeNodeEntry {
             Hash::new(hash.try_into().unwrap()),
         )
     }
+
+    pub fn encode(&self) -> Vec<u8> {
+        format!("{} {}\0", self.mode, self.name)
+            .bytes()
+            .chain(self.hash.bytes())
+            .collect()
+    }
 }
 
 impl Display for TreeNodeEntry {
@@ -51,6 +58,24 @@ impl TreeNode {
             entries.push(TreeNodeEntry::parse(reader));
         }
         Self::new(entries)
+    }
+
+    pub fn serialize(&self) -> Vec<u8> {
+        let payload: Vec<_> = self
+            .entries
+            .iter()
+            .flat_map(|entry| entry.encode())
+            .collect();
+        let mut bytes = Header::new("tree", payload.len()).encode();
+        bytes.extend_from_slice(&payload);
+        bytes
+    }
+
+    pub fn encode(&self) -> (Hash, Vec<u8>) {
+        let bytes = self.serialize();
+        let hash = Hash::hash(&bytes);
+        let encoded = codec::compress(&bytes);
+        (hash, encoded)
     }
 }
 

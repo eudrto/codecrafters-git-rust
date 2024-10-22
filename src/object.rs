@@ -57,10 +57,18 @@ impl Object {
         }
     }
 
+    pub fn hash(&self) -> Hash {
+        let serialized = match self {
+            Self::Blob(blob) => blob.serialize(),
+            Self::TreeNode(tree) => tree.serialize(),
+        };
+        Hash::hash(&serialized)
+    }
+
     pub fn write(&self, root: impl AsRef<Path>) -> Hash {
         let (hash, encoded) = match self {
             Self::Blob(blob) => blob.encode(),
-            Self::TreeNode(_) => unimplemented!(),
+            Self::TreeNode(tree_node) => tree_node.encode(),
         };
         input_output::write_obj(root, &hash.to_string(), &encoded);
         hash

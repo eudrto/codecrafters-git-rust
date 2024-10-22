@@ -10,6 +10,10 @@ impl Hash {
         Self(hash)
     }
 
+    pub fn bytes(&self) -> [u8; 20] {
+        self.0
+    }
+
     pub fn hash(bytes: &[u8]) -> Self {
         let mut hasher = Sha1::new();
         hasher.update(bytes);
