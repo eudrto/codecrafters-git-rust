@@ -13,6 +13,7 @@ mod reference_impl;
 mod repo;
 #[cfg(test)]
 mod test_utils;
+mod tree_node;
 
 #[derive(Parser)]
 struct Cli {
@@ -33,6 +34,11 @@ enum Commands {
         write: bool,
         file: String,
     },
+    LsTree {
+        #[arg(long)]
+        name_only: bool,
+        tree_ish: String,
+    },
 }
 
 pub fn run() {
@@ -48,6 +54,12 @@ pub fn run() {
         }
         Commands::HashObject { file, .. } => {
             repo.hash_object(&file);
+        }
+        Commands::LsTree {
+            name_only,
+            tree_ish,
+        } => {
+            repo.ls_tree(name_only, &tree_ish);
         }
     }
 }

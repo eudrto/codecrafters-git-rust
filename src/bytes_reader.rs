@@ -11,6 +11,10 @@ impl<'a> BytesReader<'a> {
         self.bytes.len()
     }
 
+    pub fn is_at_end(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn skip(&mut self) {
         self.read();
     }

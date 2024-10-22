@@ -1,6 +1,8 @@
 use std::{path::Path, str::from_utf8};
 
-use crate::{blob::Blob, bytes_reader::BytesReader, codec, hash::Hash, input_output};
+use crate::{
+    blob::Blob, bytes_reader::BytesReader, codec, hash::Hash, input_output, tree_node::TreeNode,
+};
 
 pub struct Header<'a> {
     pub kind: &'a str,
@@ -30,9 +32,17 @@ impl<'a> Header<'a> {
 #[derive(Debug)]
 pub enum Object {
     Blob(Blob),
+    TreeNode(TreeNode),
 }
 
 impl Object {
+    pub fn get_type(&self) -> &'static str {
+        match self {
+            Self::Blob(_) => "file",
+            Self::TreeNode(_) => "tree",
+        }
+    }
+
     pub fn read(root: impl AsRef<Path>, hash: &str) -> Self {
         let compressed = input_output::read_obj(root, hash);
         let bytes = codec::decompress(&compressed);
@@ -42,6 +52,7 @@ impl Object {
 
         match header.kind {
             "blob" => Self::Blob(Blob::parse(&mut reader)),
+            "tree" => Self::TreeNode(TreeNode::parse(&mut reader)),
             kind => panic!("unknown object type: {}", kind),
         }
     }
@@ -49,6 +60,7 @@ impl Object {
     pub fn write(&self, root: impl AsRef<Path>) -> Hash {
         let (hash, encoded) = match self {
             Self::Blob(blob) => blob.encode(),
+            Self::TreeNode(_) => unimplemented!(),
         };
         input_output::write_obj(root, &hash.to_string(), &encoded);
         hash
@@ -58,6 +70,15 @@ impl Object {
     pub fn as_blob(self) -> Blob {
         match self {
             Self::Blob(blob) => blob,
+            _ => panic!("not blob"),
+        }
+    }
+
+    #[cfg(test)]
+    pub fn as_tree(self) -> TreeNode {
+        match self {
+            Self::TreeNode(tree) => tree,
+            _ => panic!("not tree"),
         }
     }
 }
@@ -106,5 +127,25 @@ mod tests {
 
         assert_eq!(hash_got.to_string(), hash_want);
         assert_eq!(encoded_got, encoded_want);
+    }
+
+    #[test]
+    fn test_read_tree() {
+        let root = test_utils::create_test_dir();
+        let repository = reference_impl::create_repository(&root);
+
+        let contents = "";
+        input_output::write(root.join("file1"), contents);
+        input_output::write(root.join("dir1/file_in_dir_1"), contents);
+        input_output::write(root.join("dir1/file_in_dir_2"), contents);
+        input_output::write(root.join("dir2/file_in_dir_3"), contents);
+        reference_impl::git_add_all(&repository);
+        let hash = reference_impl::git_write_tree(&repository);
+
+        let tree_node = Object::read(root, &hash).as_tree();
+        let wants = ["dir1", "dir2", "file1"];
+        for (got, want) in tree_node.into_iter().zip(wants) {
+            assert_eq!(got.name, want)
+        }
     }
 }

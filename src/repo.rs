@@ -32,6 +32,7 @@ impl Repo {
         let obj = Object::read(self.get_root(), hash);
         match obj {
             Object::Blob(blob) => print!("{}", blob),
+            Object::TreeNode(_) => self.ls_tree(false, hash),
         };
     }
 
@@ -40,5 +41,29 @@ impl Repo {
         let obj = Object::Blob(Blob::new(content));
         let hash = obj.write(self.get_root());
         print!("{}", hash);
+    }
+
+    pub fn ls_tree(&self, name_only: bool, tree_ish: &str) {
+        let Object::TreeNode(tree) = Object::read(self.get_root(), tree_ish) else {
+            panic!("fatal: not a tree object")
+        };
+
+        if name_only {
+            tree.into_iter()
+                .map(|entry| &entry.name)
+                .for_each(|name| println!("{}", name));
+            return;
+        }
+
+        for entry in &tree {
+            let obj = Object::read(self.get_root(), &entry.hash.to_string());
+            println!(
+                "{:0>6} {} {}\t{}",
+                entry.mode,
+                obj.get_type(),
+                entry.hash,
+                entry.name
+            )
+        }
     }
 }
