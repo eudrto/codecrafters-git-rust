@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{blob::Blob, input_output, object::Object, tree};
+use crate::{blob::Blob, commit::Commit, input_output, object::Object, tree};
 
 pub struct Repo {
     root: PathBuf,
@@ -33,6 +33,7 @@ impl Repo {
         match obj {
             Object::Blob(blob) => print!("{}", blob),
             Object::TreeNode(_) => self.ls_tree(false, hash),
+            Object::Commit(_) => unimplemented!(),
         };
     }
 
@@ -72,5 +73,12 @@ impl Repo {
         if let Some(hash) = hash {
             print!("{}", hash)
         }
+    }
+
+    pub fn commit_tree(&self, tree: String, parent: String, message: String) {
+        let commit = Commit::new_current_time(tree.into(), vec![parent.into()], message);
+        let obj = Object::Commit(commit);
+        let hash = obj.write(self.get_root());
+        println!("{}", hash)
     }
 }

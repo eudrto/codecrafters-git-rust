@@ -22,6 +22,12 @@ impl Hash {
     }
 }
 
+impl From<String> for Hash {
+    fn from(value: String) -> Self {
+        Self::new(hex::decode(value).unwrap().try_into().unwrap())
+    }
+}
+
 impl Debug for Hash {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("Hash").field(&hex::encode(self.0)).finish()

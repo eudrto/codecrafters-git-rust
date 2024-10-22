@@ -12,7 +12,6 @@ fn build_tree(path: impl AsRef<Path>) -> Vec<Object> {
     let mut tree = vec![];
     let mut children = vec![];
     for path in input_output::read_dir_sorted(path) {
-        dbg!(&path);
         let tree_node_entry = if path.is_dir() {
             if is_dot_git(&path) {
                 continue;

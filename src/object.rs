@@ -1,7 +1,8 @@
 use std::{path::Path, str::from_utf8};
 
 use crate::{
-    blob::Blob, bytes_reader::BytesReader, codec, hash::Hash, input_output, tree_node::TreeNode,
+    blob::Blob, bytes_reader::BytesReader, codec, commit::Commit, hash::Hash, input_output,
+    tree_node::TreeNode,
 };
 
 pub struct Header<'a> {
@@ -33,6 +34,7 @@ impl<'a> Header<'a> {
 pub enum Object {
     Blob(Blob),
     TreeNode(TreeNode),
+    Commit(Commit),
 }
 
 impl Object {
@@ -40,6 +42,7 @@ impl Object {
         match self {
             Self::Blob(_) => "file",
             Self::TreeNode(_) => "tree",
+            Self::Commit(_) => "commit",
         }
     }
 
@@ -53,6 +56,7 @@ impl Object {
         match header.kind {
             "blob" => Self::Blob(Blob::parse(&mut reader)),
             "tree" => Self::TreeNode(TreeNode::parse(&mut reader)),
+            "commit" => Self::Commit(Commit::parse(&mut reader)),
             kind => panic!("unknown object type: {}", kind),
         }
     }
@@ -61,6 +65,7 @@ impl Object {
         let serialized = match self {
             Self::Blob(blob) => blob.serialize(),
             Self::TreeNode(tree) => tree.serialize(),
+            Self::Commit(commit) => commit.serialize(),
         };
         Hash::hash(&serialized)
     }
@@ -69,6 +74,7 @@ impl Object {
         let (hash, encoded) = match self {
             Self::Blob(blob) => blob.encode(),
             Self::TreeNode(tree_node) => tree_node.encode(),
+            Self::Commit(commit) => commit.encode(),
         };
         input_output::write_obj(root, &hash.to_string(), &encoded);
         hash

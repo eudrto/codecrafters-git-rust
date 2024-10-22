@@ -24,3 +24,17 @@ pub fn git_write_tree(repo: &Repository) -> String {
     let oid = index.write_tree().unwrap();
     oid.to_string()
 }
+
+pub fn read_commit(root: impl AsRef<Path>, hash: &str) -> (String, Vec<String>, Option<String>) {
+    let repo = Repository::open(root).unwrap();
+    let oid = repo.revparse_single(hash).unwrap().id();
+    let commit = repo.find_commit(oid).unwrap();
+
+    let tree = commit.tree().unwrap().id().to_string();
+    let parents: Vec<_> = commit
+        .parents()
+        .map(|commit| commit.id().to_string())
+        .collect();
+    let message = commit.message();
+    (tree, parents, message.map(|m| m.to_string()))
+}

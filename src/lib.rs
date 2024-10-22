@@ -5,6 +5,7 @@ use repo::Repo;
 mod blob;
 mod bytes_reader;
 mod codec;
+mod commit;
 mod hash;
 mod input_output;
 mod object;
@@ -41,6 +42,13 @@ enum Commands {
         tree_ish: String,
     },
     WriteTree,
+    CommitTree {
+        #[arg(short)]
+        parent: String,
+        #[arg(short)]
+        message: String,
+        tree: String,
+    },
 }
 
 pub fn run() {
@@ -64,5 +72,10 @@ pub fn run() {
             repo.ls_tree(name_only, &tree_ish);
         }
         Commands::WriteTree => repo.write_tree(),
+        Commands::CommitTree {
+            parent,
+            message,
+            tree,
+        } => repo.commit_tree(tree, parent, message),
     }
 }
