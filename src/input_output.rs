@@ -21,3 +21,7 @@ fn get_obj_path(root: impl AsRef<Path>, hash: &str) -> PathBuf {
 pub fn read_obj(root: impl AsRef<Path>, hash: &str) -> Vec<u8> {
     fs::read(get_obj_path(root, hash)).unwrap()
 }
+
+pub fn write_obj(root: impl AsRef<Path>, hash: &str, contents: &[u8]) {
+    write(get_obj_path(root, hash), contents);
+}

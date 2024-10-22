@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{input_output, object::Object};
+use crate::{blob::Blob, input_output, object::Object};
 
 pub struct Repo {
     root: PathBuf,
@@ -33,5 +33,12 @@ impl Repo {
         match obj {
             Object::Blob(blob) => print!("{}", blob),
         };
+    }
+
+    pub fn hash_object(&self, path: &str) {
+        let content = fs::read(self.root.join(path)).unwrap();
+        let obj = Object::Blob(Blob::new(content));
+        let hash = obj.write(self.get_root());
+        print!("{}", hash);
     }
 }

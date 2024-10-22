@@ -1,6 +1,6 @@
 use std::{fmt::Display, str::from_utf8};
 
-use crate::bytes_reader::BytesReader;
+use crate::{bytes_reader::BytesReader, codec, hash::Hash, object::Header};
 
 #[derive(Debug)]
 pub struct Blob {
@@ -15,6 +15,19 @@ impl Blob {
     pub fn parse(reader: &mut BytesReader) -> Self {
         let content = reader.read_all();
         Self::new(content.to_vec())
+    }
+
+    pub fn serialize(&self) -> Vec<u8> {
+        let mut bytes = Header::new("blob", self.content.len()).encode();
+        bytes.extend_from_slice(&self.content);
+        bytes
+    }
+
+    pub fn encode(&self) -> (Hash, Vec<u8>) {
+        let bytes = self.serialize();
+        let hash = Hash::hash(&bytes);
+        let encoded = codec::compress(&bytes);
+        (hash, encoded)
     }
 }
 

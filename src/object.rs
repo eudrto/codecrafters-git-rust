@@ -1,6 +1,6 @@
 use std::{path::Path, str::from_utf8};
 
-use crate::{blob::Blob, bytes_reader::BytesReader, codec, input_output};
+use crate::{blob::Blob, bytes_reader::BytesReader, codec, hash::Hash, input_output};
 
 pub struct Header<'a> {
     pub kind: &'a str,
@@ -20,6 +20,10 @@ impl<'a> Header<'a> {
         let size = from_utf8(size).unwrap().parse::<usize>().unwrap();
         reader.skip();
         Self::new(kind, size)
+    }
+
+    pub fn encode(&self) -> Vec<u8> {
+        format!("{} {}\0", self.kind, self.size).into_bytes()
     }
 }
 
@@ -42,6 +46,14 @@ impl Object {
         }
     }
 
+    pub fn write(&self, root: impl AsRef<Path>) -> Hash {
+        let (hash, encoded) = match self {
+            Self::Blob(blob) => blob.encode(),
+        };
+        input_output::write_obj(root, &hash.to_string(), &encoded);
+        hash
+    }
+
     #[cfg(test)]
     pub fn as_blob(self) -> Blob {
         match self {
@@ -55,7 +67,7 @@ mod tests {
 
     use std::fs;
 
-    use crate::{object::Object, reference_impl, test_utils};
+    use crate::{blob::Blob, input_output, object::Object, reference_impl, repo::Repo, test_utils};
 
     #[test]
     fn test_read_blob() {
@@ -69,5 +81,30 @@ mod tests {
 
         let blob = Object::read(root, &hash).as_blob();
         assert_eq!(blob.content, contents.as_bytes());
+    }
+
+    #[test]
+    fn test_write_blob() {
+        let filename = "hello.txt";
+        let contents = "Hello World!";
+
+        // want
+        let root = test_utils::create_test_dir();
+        let repository = reference_impl::create_repository(&root);
+        fs::write(root.join(filename), contents).unwrap();
+        let hash_want = reference_impl::git_add_path(&repository, filename);
+        let encoded_want = input_output::read_obj(&root, &hash_want);
+
+        // got
+        let root = test_utils::create_test_dir();
+        let repo = Repo::new(&root);
+        repo.init();
+        let blob = Blob::new(String::from(contents).bytes().collect());
+        let obj = Object::Blob(blob);
+        let hash_got = obj.write(&root);
+        let encoded_got = input_output::read_obj(&root, &hash_got.to_string());
+
+        assert_eq!(hash_got.to_string(), hash_want);
+        assert_eq!(encoded_got, encoded_want);
     }
 }

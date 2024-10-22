@@ -5,6 +5,7 @@ use repo::Repo;
 mod blob;
 mod bytes_reader;
 mod codec;
+mod hash;
 mod input_output;
 mod object;
 #[cfg(test)]
@@ -27,6 +28,11 @@ enum Commands {
         pretty: bool,
         object: String,
     },
+    HashObject {
+        #[arg(short, required = true)]
+        write: bool,
+        file: String,
+    },
 }
 
 pub fn run() {
@@ -39,6 +45,9 @@ pub fn run() {
         }
         Commands::CatFile { object, .. } => {
             repo.cat_file(&object);
+        }
+        Commands::HashObject { file, .. } => {
+            repo.hash_object(&file);
         }
     }
 }
